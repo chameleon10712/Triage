@@ -2,10 +2,12 @@ import os
 import glob
 import subprocess
 import json
+import shutil
 
-pocs_dir = '/home/oceane/fuzz_test/Yuan-fuzz-cg/fuzz_output_d/crashes'
-params_dir = '/home/oceane/fuzz_test/Yuan-fuzz-cg/fuzz_output_d/queue_info/crashes/'
-target = '/home/oceane/fuzz_test/new_djpeg/libjpeg-turbo/build_asan_g/djpeg'
+
+pocs_dir = '/home/oceane/fuzz_test/SQ-fuzz-fast-splice2/tiffcrop_output_d/crashes'
+params_dir = '/home/oceane/fuzz_test/SQ-fuzz-fast-splice2/tiffcrop_output_d/queue_info/crashes/'
+target = '/home/oceane/fuzz_test/tiff-4.4.0/build_asan/bin/tiffcrop'
 crashes = []
 triage_crashes = []
 
@@ -46,6 +48,9 @@ def parse(result):
         if 'SUMMARY' in line:
             report = line
             break
+        # elif 'error' in line:
+        #     report = line
+        #     break
 
     if report == '':
         return '', '', ''
@@ -63,8 +68,14 @@ def parse(result):
 def run_cmd(params, poc):
     cmd = []
     cmd.append(target)
+    shutil.copyfile(poc, '/home/oceane/fuzz_test/Triage/poc')
+
+    for idx in range(len(params)):
+        if '@@' in params[idx]:
+            params[idx] = '/home/oceane/fuzz_test/Triage/poc'
+
     cmd += params
-    cmd.append(poc)
+    # print('cmd', cmd)
     result = subprocess.run(cmd, capture_output=True)
     # print(result.stderr.decode("utf-8"))
     result = result.stderr.decode("utf-8").splitlines()
@@ -75,7 +86,7 @@ def base(i):
 
     poc_path = pocs_dir + '/' + crashes[i]['poc']
     result = run_cmd(crashes[i]['params'].split(), poc_path)
-    # crashes[i]['ASAN'] = result
+    crashes[i]['ASAN'] = result
     # crashes[i]['ans']['file'], crashes[i]['ans']['line_no'], crashes[i]['ans']['func'], crashes[i]['ans']['info'] = parse(result)
     res = parse(result)
     crashes[i]['ans']['file'] = res[0]
@@ -100,8 +111,11 @@ def get_params(entry):
     path = params_dir + entry
     result = subprocess.run(['cat', path], capture_output=True).stdout.decode("utf-8")
     params = result.split()
-    params.pop()
     params.pop(0)
+    for idx in range(len(params)):
+        if '.cur_input' in params[idx]:
+            params[idx] = '@@'
+    # print('params', params)
     return ' '.join(params)
 
 
