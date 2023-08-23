@@ -1,10 +1,8 @@
 import json
 import subprocess
+from config import *
 
 triage_list = []
-pocs_dir = '/home/oceane/fuzz_test/Yuan-fuzz-cg/fuzz_output_d/crashes'
-target = '/home/oceane/fuzz_test/new_djpeg/libjpeg-turbo/build_asan_g/djpeg'
-
 prefix = ""
 
 def parse(result):
