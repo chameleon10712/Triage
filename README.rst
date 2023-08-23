@@ -12,6 +12,7 @@ Triage
 
   # 3. Filter output.txt
   python3 filter.py
+  # -v, --verbose: print crash id, ASAN summary information
 
   # 4. Generate report
   python3 pretty-print.py --id <id>
