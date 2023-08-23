@@ -92,6 +92,8 @@ def run_cmd(params, poc):
 
 def base(i):
 
+	crashes[i]['id'] = str(i)
+
 	poc_path = pocs_dir + '/' + crashes[i]['poc']
 	result = run_cmd(crashes[i]['params'].split(), poc_path)
 	crashes[i]['ASAN'] = result
