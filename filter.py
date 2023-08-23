@@ -1,5 +1,6 @@
 import json
 import subprocess
+import getopt, sys
 from config import *
 
 triage_list = []
@@ -108,13 +109,10 @@ def triage(crash):
 		#print('unique')
 	
 
-def app():
+def app(verbose=False):
 	with open(prefix + 'output.txt', 'r') as f:
 		data = f.read()
 		crashes = list(data.split('\n'))
-
-	# print(crashes[0])
-	# print(type(json.loads(crashes[0])))
 
 	for x in crashes:
 		# print(x, '\n')
@@ -127,7 +125,10 @@ def app():
 		else:
 			print('#', i, ':', item['ans']['file'], item['ans']['func'])
 
-		#print(item['poc'].split(',')[0])
+		if verbose:
+			print(item['poc'].split(',')[0])
+			print(item['ans']['info'])
+			print('\n')
 
 	with open('triage-output.txt', 'w') as f:
 		for i, item in enumerate(triage_list):
@@ -136,6 +137,19 @@ def app():
 
 
 if __name__ == '__main__':
-	app()
+	try:
+		opts, args = getopt.getopt(sys.argv[1:], ":v", ["verbose"])
+	except getopt.GetoptError as err:
+		# print help information and exit:
+		print(err)  # will print something like "option -a not recognized"
+		# usage()
+		sys.exit(2)
+
+	for o, a in opts:
+		if o in ("-v", "--verbose"):
+			app(verbose=True)
+
+	if len(sys.argv) == 1:
+		app()
 
 

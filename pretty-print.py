@@ -90,7 +90,6 @@ if __name__ == '__main__':
 			file_name = "output.txt"
 			out_file = "report.txt"
 			gen_report(a)
-			pass
 
 		elif o in ("-t", "--triage"):
 			file_name = "triage-output.txt"
