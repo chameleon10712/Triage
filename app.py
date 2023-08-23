@@ -4,11 +4,8 @@ import subprocess
 import json
 import shutil
 import getopt, sys
+from config import *
 
-
-pocs_dir = '/home/oceane/fuzz_test/SQ-fuzz-fast-splice2/tiffcrop_output_d/crashes'
-params_dir = '/home/oceane/fuzz_test/SQ-fuzz-fast-splice2/tiffcrop_output_d/queue_info/crashes/'
-target = '/home/oceane/fuzz_test/tiff-4.4.0/build_asan/bin/tiffcrop'
 crashes = []
 triage_crashes = []
 
@@ -93,9 +90,11 @@ def run_cmd(params, poc):
 def base(i):
 
 	crashes[i]['id'] = str(i)
-
 	poc_path = pocs_dir + '/' + crashes[i]['poc']
-	result = run_cmd(crashes[i]['params'].split(), poc_path)
+    local_path = './pocs/poc_'+str(i)
+    shutil.copyfile(poc_path, local_path)
+    result = run_cmd(crashes[i]['params'].split(), local_path)
+
 	crashes[i]['ASAN'] = result
 	# crashes[i]['ans']['file'], crashes[i]['ans']['line_no'], crashes[i]['ans']['func'], crashes[i]['ans']['info'] = parse(result)
 	res = parse(result)
@@ -155,7 +154,7 @@ def app(start=0, end=None):
 	if end is None or end > max_len:
 		end = max_len
 
-	print('Running start from id: '+ str(start) + ' to id: '+ str(end))
+	print('Running start from id: '+ str(start) + ' to '+ str(end))
 	# arg minimize
 	#prefix = "id-" + str(start)+"-to-"+str(end)+"-"
 	prefix = ""

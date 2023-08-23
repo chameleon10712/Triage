@@ -1,10 +1,10 @@
 import json
 import getopt, sys
 from get_version import *
+from config import *
 
 file_name = ""
 out_file = ""
-target = ""
 
 def get_cmd(item):
     params = item['params'].split()

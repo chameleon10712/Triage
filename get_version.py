@@ -1,6 +1,5 @@
 import subprocess
-
-target_dir = '/home/oceane/fuzz_test/mruby_afl'
+from config import *
 
 def run(cmd):
     cmd = cmd.split()
