@@ -4,7 +4,7 @@ from get_version import *
 
 file_name = ""
 out_file = ""
-target = "/home/oceane/fuzz_test/mruby_asan/build/host/bin/mruby"
+target = ""
 
 def get_cmd(item):
     params = item['params'].split()

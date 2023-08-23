@@ -6,9 +6,9 @@ import shutil
 import getopt, sys
 
 
-pocs_dir = '/home/oceane/fuzz_test/Wei-fuzz/mruby_output_M/crashes'
-params_dir = '/home/oceane/fuzz_test/Wei-fuzz/mruby_output_M/queue_info/crashes/'
-target = '/home/oceane/fuzz_test/mruby_asan/build/host/bin/mruby'
+pocs_dir = '/home/oceane/fuzz_test/SQ-fuzz-fast-splice2/tiffcrop_output_d/crashes'
+params_dir = '/home/oceane/fuzz_test/SQ-fuzz-fast-splice2/tiffcrop_output_d/queue_info/crashes/'
+target = '/home/oceane/fuzz_test/tiff-4.4.0/build_asan/bin/tiffcrop'
 crashes = []
 triage_crashes = []
 
