@@ -11,8 +11,8 @@ def get_compiler():
     gcc = run(cmd).split('\n')[0]
     cmd = 'g++ --version'
     gpp = run(cmd).split('\n')[0]
-    print(gcc)
-    print(gpp)
+    # print(gcc)
+    # print(gpp)
 
     return gcc + '\n' + gpp
 
@@ -24,7 +24,7 @@ def get_cpu():
     for line in lines:
         if 'Model name' in line:
             cpu = line.split(':')[1].lstrip()
-            print(cpu)
+            # print(cpu)
             break
 
     return cpu
@@ -37,7 +37,7 @@ def get_os():
     lines = lines.split('\n')
     os = lines[2].split()
     os = ' '.join(os[1:4])
-    print(os)
+    # print(os)
     return os
 
 
@@ -50,7 +50,7 @@ def get_logs():
     ).decode('utf-8')
     lines = lines.split('\n')[0].split()
     line = 'git '+ lines[0] +' '+ lines[1][:9]
-    print(line)
+    # print(line)
     # print('git commit', lines[1:10])
     # return '$ git log --pretty="%H" -n 1\n' + lines[1:10] + '\n'
     return line
