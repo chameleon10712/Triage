@@ -70,14 +70,15 @@ def parse(result):
     return [file_name, line_no, func_name, info]
 
 
-def run_cmd(params, poc):
+def run_cmd(params, poc_path):
     cmd = []
     cmd.append(target)
-    shutil.copyfile(poc, '/home/oceane/fuzz_test/Triage/poc')
+    # shutil.copyfile(poc, '/home/oceane/fuzz_test/Triage/poc')
 
     for idx in range(len(params)):
         if '@@' in params[idx]:
-            params[idx] = '/home/oceane/fuzz_test/Triage/poc'
+            # params[idx] = '/home/oceane/fuzz_test/Triage/poc'
+            params[idx] = poc_path
 
     cmd += params
     # print('cmd', cmd)
