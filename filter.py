@@ -7,149 +7,162 @@ triage_list = []
 prefix = ""
 
 def parse(result):
-	report = ''
-	for line in result:
-		if 'SUMMARY' in line:
-			report = line
-			break
+    report = ''
+    for line in result:
+        if 'SUMMARY' in line:
+            report = line
+            break
 
-	if report == '':
-		return '', '', ''
+    if report == '':
+        return '', '', ''
 
-	# print(report)
-	info = report.split()
-	func_name = info[-1] 
-	file_name = info[-3].split('/')[-1]
-	line_no = file_name.split(':')[-1]
-	file_name = file_name.split(':')[0]
-	print('parse', file_name, line_no, func_name)
+    # print(report)
+    info = report.split()
+    func_name = info[-1] 
+    file_name = info[-3].split('/')[-1]
+    line_no = file_name.split(':')[-1]
+    file_name = file_name.split(':')[0]
+    print('parse', file_name, line_no, func_name)
 
-	if file_name == 'AddressSanitizer':
-		print("file_name == 'AddressSanitizer'")
-		for line in result:
-			if 'ERROR' in line:
-				report = line
-				break
-		info = report.split()
-		func_name=file_name=line_no=None
+    if file_name == 'AddressSanitizer':
+        print("file_name == 'AddressSanitizer'")
+        for line in result:
+            if 'ERROR' in line:
+                report = line
+                break
+        info = report.split()
+        func_name=file_name=line_no=None
 
-	return [file_name, line_no, func_name, info]
+    return [file_name, line_no, func_name, info]
 
 def run_cmd(params, poc):
-	cmd = []
-	cmd.append(target)
-	cmd += params
-	cmd.append(poc)
-	result = subprocess.run(cmd, capture_output=True)
-	# print(result.stderr.decode("utf-8"))
-	result = result.stderr.decode("utf-8").splitlines()
-	return result
+    cmd = []
+    cmd.append(target)
+    cmd += params
+    cmd.append(poc)
+    result = subprocess.run(cmd, capture_output=True)
+    # print(result.stderr.decode("utf-8"))
+    result = result.stderr.decode("utf-8").splitlines()
+    return result
 
 def arg_minimize(crash):
-	parameters = ['-'+e for e in crash['params'].split('-') if e]
-	# print('parameters', parameters,'\n\n')
+    parameters = ['-'+e for e in crash['params'].split('-') if e]
+    # print('parameters', parameters,'\n\n')
 
-	n = len(parameters)
-	must = []
+    n = len(parameters)
+    must = []
 
-	for i in range(n):
-		last = parameters.pop()
-		s = ''.join(parameters+must)
-		_list = s.split()
+    for i in range(n):
+        last = parameters.pop()
+        s = ''.join(parameters+must)
+        _list = s.split()
 
-		poc_path = pocs_dir + '/' + crash['poc']
-		result = run_cmd(_list, poc_path)
-		res = parse(result)
-		# print(file_name, line_no, func_name)
-		file_name = res[0]
-		line_no = res[1]
-		func_name = res[2]
+        poc_path = pocs_dir + '/' + crash['poc']
+        result = run_cmd(_list, poc_path)
+        res = parse(result)
+        # print(file_name, line_no, func_name)
+        file_name = res[0]
+        line_no = res[1]
+        func_name = res[2]
 
-		if file_name==crash['ans']['file'] and func_name==crash['ans']['func']:
-			pass
-		# print('pass')
-	else:
-		# print('failed, must add', last, '\n')
-		must.append(last)
+        if file_name==crash['ans']['file'] and func_name==crash['ans']['func']:
+            pass
+        # print('pass')
+    else:
+        # print('failed, must add', last, '\n')
+        must.append(last)
 
-	return must
+    return must
 
 
 def triage(crash):
-	if triage_list == []:
-		triage_list.append(crash)
-		# print(crash)
-		return
 
-	flag = False
+    d = {'ids': [crash['id']]}
+    crash.update(d)
 
-	i = 0
-	for item in triage_list:
-		'''
-		print('[' + str(i) + ']')
-		print('triage_list', item['ans']['file'], item['ans']['func'])
-		print('crash',  crash['ans']['file'], crash['ans']['func'])
-		'''
+    if triage_list == []:
+        triage_list.append(crash)
+        # print(crash)
+        return
 
-		if item['ans']['func'] == crash['ans']['func']:
-			if item['ans']['file'] == crash['ans']['file']:
-				flag = True
-				#print('duplicate')
-				break
-			else:
-				flag = True
-				#print('duplicate??')
-				break
-		i = i + 1
+    flag = False
 
-	if flag is False:
-		# must = arg_minimize(crash)
-		# crash['must'] = must
-		triage_list.append(crash)
-		#print('unique')
-	
+    i = 0
+    for item in triage_list:
+        '''
+        print('[' + str(i) + ']')
+        print('triage_list', item['ans']['file'], item['ans']['func'])
+        print('crash',  crash['ans']['file'], crash['ans']['func'])
+        '''
 
-def app(verbose=False):
-	with open(prefix + 'output.txt', 'r') as f:
-		data = f.read()
-		crashes = list(data.split('\n'))
+        if item['ans']['func'] == crash['ans']['func']:
+            if item['ans']['file'] == crash['ans']['file']:
+                flag = True
+                #print('duplicate')
+                item['ids'].append(crash['id'])
+                break
+            else:
+                flag = True
+                #print('duplicate??')
+                break
+        i = i + 1
 
-	for x in crashes:
-		# print(x, '\n')
-		if x != '':
-			triage(json.loads(x))
+    if flag is False:
+        # must = arg_minimize(crash)
+        # crash['must'] = must
+        triage_list.append(crash)
+        #print('unique')
+    
 
-	for i, item in enumerate(triage_list):
-		if item['ans']['file'] == '':
-			print('#', i, ':', item)
-		else:
-			print('#', i, ':', item['ans']['file'], item['ans']['func'])
+def app(verbose, show_id):
+    with open(prefix + 'output.txt', 'r') as f:
+        data = f.read()
+        crashes = list(data.split('\n'))
 
-		if verbose:
-			print(item['poc'].split(',')[0])
-			print(item['ans']['info'])
-			print('\n')
+    for x in crashes:
+        # print(x, '\n')
+        if x != '' and x != []:
+            triage(json.loads(x))
 
-	with open('triage-output.txt', 'w') as f:
-		for i, item in enumerate(triage_list):
-			f.write(json.dumps(item))
-			f.write('\n')
+    for i, item in enumerate(triage_list):
+        if item['ans']['file'] == '':
+            print('#', i, ':', item)
+        else:
+            print('#', i, ':', item['ans']['file'], item['ans']['func'])
+
+        if show_id:
+            print(item['poc'].split(',')[0])
+        if verbose:
+            print('num', len(item['ids']))
+            print(item['ids'])
+            print(item['ans']['info'])
+            print('\n')
+
+    with open('triage-output.txt', 'w') as f:
+        for i, item in enumerate(triage_list):
+            f.write(json.dumps(item))
+            f.write('\n')
 
 
 if __name__ == '__main__':
-	try:
-		opts, args = getopt.getopt(sys.argv[1:], ":v", ["verbose"])
-	except getopt.GetoptError as err:
-		# print help information and exit:
-		print(err)  # will print something like "option -a not recognized"
-		# usage()
-		sys.exit(2)
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], ":sv", ["show", "verbose"])
+    except getopt.GetoptError as err:
+        # print help information and exit:
+        print(err)  # will print something like "option -a not recognized"
+        # usage()
+        sys.exit(2)
 
-	for o, a in opts:
-		if o in ("-v", "--verbose"):
-			app(verbose=True)
+    verbose = False
+    show_id = False
 
-	if len(sys.argv) == 1:
-		app()
+    for o, a in opts:
+        if o in ("-v", "--verbose"):
+            verbose = True
+            show_id = True
+        elif o in ("-s", "--show"):
+            show_id = True
+
+    app(verbose=verbose, show_id=show_id)
 
 

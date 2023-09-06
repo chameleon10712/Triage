@@ -82,9 +82,13 @@ def run_cmd(params, poc_path):
 
     cmd += params
     # print('cmd', cmd)
-    result = subprocess.run(cmd, capture_output=True)
-    # print(result.stderr.decode("utf-8"))
-    result = result.stderr.decode("utf-8").splitlines()
+    try:
+        result = subprocess.run(cmd, capture_output=True, timeout=4)
+        # print(result.stderr.decode("utf-8"))
+        result = result.stderr.decode("utf-8").splitlines()
+    except:
+        result = []
+
     return result
 
 
@@ -151,6 +155,7 @@ def triage(crash):
 def app(start=0, end=None):
     print('Searching crash directories...')
     max_len = len(crashes)
+    # print(crashes)
 
     if end is None or end > max_len:
         end = max_len
@@ -194,7 +199,7 @@ if __name__ == '__main__':
     start = -1
     end = -1
     _id = -1
-    print(opts)
+    # print(opts)
     for o, a in opts:
         if o in ("-i", "--id"):
             _id = int(a)    

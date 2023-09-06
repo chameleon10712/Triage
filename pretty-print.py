@@ -1,5 +1,6 @@
 import json
 import getopt, sys
+import shutil
 from get_version import *
 from config import *
 
@@ -44,7 +45,8 @@ def gen_poc_context(f, item):
     # print(result.stdout.decode("utf-8"))
     text = result.stdout.decode("utf-8")
     text = text.replace('\n', '')
-    text = 'echo -ne \"' + text + '\" | base64 -d > poc_test'
+    text = 'echo -ne \"' + text + '\" | base64 -d > poc'
+    shutil.copyfile('./pocs/poc_' + item['id'], './poc')
     f.write(text)
     f.write('\n\n')
 
@@ -102,7 +104,7 @@ def app():
 
 if __name__ == '__main__':
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "i:t:n:", ["id=", "triage", "normal"])
+        opts, args = getopt.getopt(sys.argv[1:], "n:i:t:", ["normal", "id=", "triage"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)  # will print something like "option -a not recognized"
