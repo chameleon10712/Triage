@@ -6,6 +6,7 @@ Triage
 .. code:: sh
 
   # 1. Set your <fuzzing output path> and <target path> in `config.py`
+  mkdir pocs
 
   # 2. Run targets
   python3 app.py
