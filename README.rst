@@ -5,7 +5,7 @@ Triage
 
 .. code:: sh
 
-  # 1. Set your <fuzzing output path> and <target path> in `config.py`
+  # 1. Set your <fuzzing output path> and <target path> in `config.py` and create pocs directory
   mkdir pocs
 
   # 2. Run targets
