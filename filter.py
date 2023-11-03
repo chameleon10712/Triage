@@ -6,6 +6,35 @@ from config import *
 triage_list = []
 prefix = ""
 
+# def parse(result):
+#     report = ''
+#     for line in result:
+#         if 'SUMMARY' in line:
+#             report = line
+#             break
+#
+#     if report == '':
+#         return '', '', ''
+#
+#     # print(report)
+#     info = report.split()
+#     func_name = info[-1] 
+#     file_name = info[-3].split('/')[-1]
+#     line_no = file_name.split(':')[-1]
+#     file_name = file_name.split(':')[0]
+#     print('parse', file_name, line_no, func_name)
+#
+#     if file_name == 'AddressSanitizer':
+#         print("file_name == 'AddressSanitizer'")
+#         for line in result:
+#             if 'ERROR' in line:
+#                 report = line
+#                 break
+#         info = report.split()
+#         func_name=file_name=line_no=None
+#
+#     return [file_name, line_no, func_name, info]
+
 def parse(result):
     report = ''
     for line in result:
@@ -22,7 +51,10 @@ def parse(result):
     file_name = info[-3].split('/')[-1]
     line_no = file_name.split(':')[-1]
     file_name = file_name.split(':')[0]
-    print('parse', file_name, line_no, func_name)
+    error_type = info[2]
+    print('info', info)
+    print('error type', error_type)
+    # print('parse', file_name, line_no, func_name)
 
     if file_name == 'AddressSanitizer':
         print("file_name == 'AddressSanitizer'")
@@ -33,17 +65,28 @@ def parse(result):
         info = report.split()
         func_name=file_name=line_no=None
 
-    return [file_name, line_no, func_name, info]
+    return [file_name, line_no, func_name, info, error_type]
+
 
 def run_cmd(params, poc):
     cmd = []
     cmd.append(target)
     cmd += params
     cmd.append(poc)
-    result = subprocess.run(cmd, capture_output=True)
-    # print(result.stderr.decode("utf-8"))
-    result = result.stderr.decode("utf-8").splitlines()
-    return result
+    print(' '.join(cmd))
+
+    try:
+        result = subprocess.run(cmd, capture_output=True, timeout=4)
+        print('returncode', result.returncode)
+        returncode = result.returncode
+        # print(result.stderr.decode("utf-8"))
+        result = result.stderr.decode("utf-8").splitlines()
+    except:
+        print('except')
+        result = []
+        returncode = None
+
+    return result, returncode
 
 def arg_minimize(crash):
     parameters = ['-'+e for e in crash['params'].split('-') if e]
@@ -58,19 +101,27 @@ def arg_minimize(crash):
         _list = s.split()
 
         poc_path = pocs_dir + '/' + crash['poc']
-        result = run_cmd(_list, poc_path)
+        result, returncode = run_cmd(_list, poc_path)
         res = parse(result)
         # print(file_name, line_no, func_name)
         file_name = res[0]
         line_no = res[1]
         func_name = res[2]
 
-        if file_name==crash['ans']['file'] and func_name==crash['ans']['func']:
+        if len(res) > 4:
+            error_type = res[4]
+        else:
+            error_type = None
+
+        # print('original err', crash['ans']['err'])
+        # print('ori returncode', crash['returncode'])
+        # print('return code', returncode)
+        if returncode==crash['returncode'] and file_name==crash['ans']['file'] and func_name==crash['ans']['func']:
             pass
         # print('pass')
-    else:
-        # print('failed, must add', last, '\n')
-        must.append(last)
+        else:
+            # print('failed, must add', last, '\n')
+            must.append(last)
 
     return must
 
@@ -108,8 +159,8 @@ def triage(crash):
         i = i + 1
 
     if flag is False:
-        # must = arg_minimize(crash)
-        # crash['must'] = must
+        must = arg_minimize(crash)
+        crash['must'] = must
         triage_list.append(crash)
         #print('unique')
     
