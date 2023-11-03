@@ -1,10 +1,12 @@
 import os
 import glob
+import signal
 import subprocess
 import json
 import shutil
 import getopt, sys
 from config import *
+from utils import *
 
 crashes = []
 triage_crashes = []
@@ -23,7 +25,7 @@ def arg_minimize(index):
         _list = s.split()
 
         poc_path = pocs_dir + '/' + crashes[index]['poc']
-        result = run_cmd(_list, poc_path)
+        result, returncode = run_cmd(_list, poc_path)
         res = parse(result)
         # print(file_name, line_no, func_name)
         file_name = res[0]
@@ -34,40 +36,10 @@ def arg_minimize(index):
             pass
         # print('pass')
     else:
-        # print('failed, must add', last, '\n')
+        print('failed, must add', last, '\n')
         must.append(last)
 
     crashes[index]['must'] = must
-
-
-def parse(result):
-    report = ''
-    for line in result:
-        if 'SUMMARY' in line:
-            report = line
-            break
-
-    if report == '':
-        return '', '', ''
-
-    # print(report)
-    info = report.split()
-    func_name = info[-1] 
-    file_name = info[-3].split('/')[-1]
-    line_no = file_name.split(':')[-1]
-    file_name = file_name.split(':')[0]
-    # print(file_name, line_no, func_name)
-
-    if file_name == 'AddressSanitizer':
-        print("file_name == 'AddressSanitizer'")
-        for line in result:
-            if 'ERROR' in line:
-                report = line
-                break
-        info = report.split()
-        func_name=file_name=line_no=None
-
-    return [file_name, line_no, func_name, info]
 
 
 def run_cmd(params, poc_path):
@@ -81,33 +53,44 @@ def run_cmd(params, poc_path):
             params[idx] = poc_path
 
     cmd += params
+    # print('cmd', ' '.join(cmd))
     # print('cmd', cmd)
     try:
-        result = subprocess.run(cmd, capture_output=True, timeout=4)
-        # print(result.stderr.decode("utf-8"))
-        result = result.stderr.decode("utf-8").splitlines()
+        res = subprocess.run(cmd, capture_output=True, timeout=4)
+        returncode = res.returncode
+        # print('res', res)
+        # print('res.returncode', signal.Signals(abs(res.returncode)).name)
+        result = res.stderr.decode("utf-8").splitlines()
+        result.append(signal.Signals(abs(res.returncode)).name)
+
     except:
         result = []
-
-    return result
+        returncode = None
+    
+    return result, returncode
 
 
 def base(i):
+
+    if not os.path.exists('./pocs'):
+        os.makedirs('./pocs')
 
     crashes[i]['id'] = str(i)
     poc_path = pocs_dir + '/' + crashes[i]['poc']
     local_path = './pocs/poc_'+ str(i)
     shutil.copyfile(poc_path, local_path)
-    result = run_cmd(crashes[i]['params'].split(), local_path)
+    result, returncode = run_cmd(crashes[i]['params'].split(), local_path)
 
+    crashes[i]['returncode'] = returncode
     crashes[i]['ASAN'] = result
     # crashes[i]['ans']['file'], crashes[i]['ans']['line_no'], crashes[i]['ans']['func'], crashes[i]['ans']['info'] = parse(result)
     res = parse(result)
     crashes[i]['ans']['file'] = res[0]
     crashes[i]['ans']['line_no'] = res[1]
     crashes[i]['ans']['func'] = res[2]
-    if len(res) > 3:
+    if len(res) > 4:
         crashes[i]['ans']['info'] = ' '.join(res[3])
+        crashes[i]['ans']['err'] = res[4]
 
 
 def get_params(entry):
@@ -119,6 +102,9 @@ def get_params(entry):
         if '.cur_input' in params[idx]:
             params[idx] = '@@'
     # print('params', params)
+    if params[-1] == '/dev/null':
+        params.pop()
+
     return ' '.join(params)
 
 
