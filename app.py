@@ -72,25 +72,29 @@ def run_cmd(params, poc_path):
 
 def base(i):
 
+    crash = crashes[i]
+
     if not os.path.exists('./pocs'):
         os.makedirs('./pocs')
 
-    crashes[i]['id'] = str(i)
-    poc_path = pocs_dir + '/' + crashes[i]['poc']
+    crash['id'] = str(i)
+    poc_path = pocs_dir + '/' + crash['poc']
     local_path = './pocs/poc_'+ str(i)
     shutil.copyfile(poc_path, local_path)
-    result, returncode = run_cmd(crashes[i]['params'].split(), local_path)
+    result, returncode = run_cmd(crash['params'].split(), local_path)
 
-    crashes[i]['returncode'] = returncode
-    crashes[i]['ASAN'] = result
-    # crashes[i]['ans']['file'], crashes[i]['ans']['line_no'], crashes[i]['ans']['func'], crashes[i]['ans']['info'] = parse(result)
+    crash['returncode'] = returncode
+    crash['ASAN'] = result
+    # crash['ans']['file'], crash['ans']['line_no'], crash['ans']['func'], crash['ans']['info'] = parse(result)
     res = parse(result)
-    crashes[i]['ans']['file'] = res[0]
-    crashes[i]['ans']['line_no'] = res[1]
-    crashes[i]['ans']['func'] = res[2]
+    crash['ans']['file'] = res[0]
+    crash['ans']['line_no'] = res[1]
+    crash['ans']['func'] = res[2]
+
     if len(res) > 4:
-        crashes[i]['ans']['info'] = ' '.join(res[3])
-        crashes[i]['ans']['err'] = res[4]
+        crash['ans']['info'] = ' '.join(res[3])
+        crash['ans']['err'] = res[4]
+        crash['shadow_bytes'] = res[5]
 
 
 def get_params(entry):
