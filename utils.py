@@ -16,6 +16,7 @@ def parse(result):
     line_no = file_name.split(':')[-1]
     file_name = file_name.split(':')[0]
     error_type = info[2]
+    shadow_bytes = 0
     print('info', info)
     print('error type', error_type)
     # print('parse', file_name, line_no, func_name)
@@ -25,9 +26,11 @@ def parse(result):
         for line in result:
             if 'ERROR' in line:
                 report = line
+            if 'shadow byte' in line:
+                shadow_bytes = 1
                 break
         info = report.split()
         func_name=file_name=line_no=None
 
-    return [file_name, line_no, func_name, info, error_type]
+    return [file_name, line_no, func_name, info, error_type, shadow_bytes]
 
