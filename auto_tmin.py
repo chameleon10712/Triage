@@ -8,7 +8,7 @@ TIMEOUT = 720
 
 process_result = []
 
-def tmin(crash):
+def tmin(crash, conn=None):
 
     id_ = crash['id']
     if not os.path.exists(f'./pocs/poc_{id_}'):
@@ -46,6 +46,16 @@ def tmin(crash):
         process_result.append(x)
         return
 
+    return
+
+
+def check_min(crash):
+    id_ = crash['id']
+    if 'must' in crash:
+        must = ' '.join(crash['must'])
+    else:
+        must = ' '.join(crash['params'].split()[:-1])
+
     if not os.path.exists(f'./pocs/poc_min_{id_}'):
         print(f'./pocs/poc_min_{id_} does not exist')
         return
@@ -61,9 +71,14 @@ def tmin(crash):
     cmd = f"{target} {must} ./pocs/poc_min_{id_}"
     print(f'Crash: {id_} checking poc_min ...\n cmd: ', cmd)
     cmd = cmd.split()
-    result = subprocess.run(cmd, timeout=TIMEOUT)
+    result = subprocess.run(cmd, capture_output=True, timeout=TIMEOUT)
     returncode = result.returncode
+    print('returncode', returncode)
+    
+    if returncode == 255:
+        print(result.stderr.decode("utf-8"))
 
+    # result is None if capture_output==False
     if result.stderr is not None:
         result = result.stderr.decode("utf-8").splitlines()
     elif result.stdout is not None:
@@ -91,16 +106,28 @@ def tmin(crash):
     return
 
 
-def app():
+def app(crash, conn=None):
+    tmin(crash)
+    check_min(crash)
+    return
+
+
+def test():
     with open('triage-output.txt', 'r') as f:
         data = f.read()
         crashes = list(data.split('\n'))
 
-    crash = crashes[1]
-    crash = json.loads(crash)
-    tmin(crash)
+    #3: id:00050
+    # crash = crashes[0]
+    for crash in crashes:
+        try:
+            crash = json.loads(crash)
+        except:
+            continue
+        tmin(crash)
+        check_min(crash)
 
 
 if __name__ == '__main__':
-    app()
+    test()
 

@@ -1,5 +1,5 @@
 import os
-from multiprocessing import Process, Pool
+from multiprocessing import Process, Pipe
 from auto_tmin import *
 
 if __name__ == '__main__':
@@ -9,23 +9,30 @@ if __name__ == '__main__':
         crashes = list(data.split('\n'))
 
     p_list = []
+    conn_list = []
+    res = []
 
     for crash in crashes:
         try:
             crash = json.loads(crash)
-            p = Process(target=tmin, args=(crash,))
+            # parent_conn, child_conn = Pipe()
+
+            p = Process(target=app, args=(crash,))
             p.start()
             print('starting process')
             print('crash:', crash['id'])
             p_list.append(p)
+            # conn = (parent_conn, child_conn)
+            # conn_list.append(conn)
+
         except:
             continue
 
-    for p in p_list:
+    for idx, p in enumerate(p_list):
+        # res.append(conn_list[idx][0].recv())
         p.join()
 
-    for x in process_result:
-        print(f"Crash {x['id']}: {x['res']}")
-    
+    # for r in res:
+    #     print(r)
 
 
