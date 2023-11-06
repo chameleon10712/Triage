@@ -15,7 +15,13 @@ def read_data():
 
 
 def get_cmd(item, path=target):
-    params = item['params'].split()
+    if 'must' in item:
+        params = item['must']
+        poc =  item['params'].split()[-1]
+        params.append(poc)
+    else:
+        params = item['params'].split()
+
     for idx in range(len(params)):
         if '@@' in params[idx]:
             params[idx] = './pocs/poc_' + item['id']
