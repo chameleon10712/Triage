@@ -3,9 +3,12 @@ import subprocess
 import getopt, sys
 from config import *
 from utils import *
+from multiprocessing import Process, Queue
 
 triage_list = []
 prefix = ""
+p_list = []
+q_list = []
 
 
 def run_cmd(params, poc):
@@ -28,7 +31,7 @@ def run_cmd(params, poc):
 
     return result, returncode
 
-def arg_minimize(crash):
+def arg_minimize(crash, q=None):
     parameters = ['-'+e for e in crash['params'].split('-') if e]
     # print('parameters', parameters,'\n\n')
 
@@ -62,6 +65,9 @@ def arg_minimize(crash):
         else:
             # print('failed, must add', last, '\n')
             must.append(last)
+
+    if q is not None:
+        q.put(must)
 
     return must
 
@@ -114,6 +120,21 @@ def app(verbose, show_id):
         # print(x, '\n')
         if x != '' and x != []:
             triage(json.loads(x))
+
+    # multiprocess
+    # for crash in triage_list:
+    #     # must = arg_minimize(crash)
+    #     # crash['must'] = must
+    #     q = Queue()
+    #     p = Process(target=arg_minimize, args=(crash, q,))
+    #     p.start()
+    #     p_list.append(p)
+    #     q_list.append(q)
+    #
+    # for i, crash in enumerate(triage_list):
+    #     crash['must'] = q_list[i].get()
+    #     p_list[i].join()
+        
 
     for i, item in enumerate(triage_list):
         if item['ans']['file'] == '':

@@ -7,9 +7,13 @@ import shutil
 import getopt, sys
 from config import *
 from utils import *
+from multiprocessing import Process, Queue
 
 crashes = []
 triage_crashes = []
+output_list = []
+p_list = []
+q_list = []
 
 
 def arg_minimize(index):
@@ -70,9 +74,9 @@ def run_cmd(params, poc_path):
     return result, returncode
 
 
-def base(i):
+def base(crash, i, q=None):
 
-    crash = crashes[i]
+    # crash = crashes[i]
 
     if not os.path.exists('./pocs'):
         os.makedirs('./pocs')
@@ -95,6 +99,11 @@ def base(i):
         crash['ans']['info'] = ' '.join(res[3])
         crash['ans']['err'] = res[4]
         crash['shadow_bytes'] = res[5]
+
+    if q is not None:
+        q.put(crash)
+
+    return crash
 
 
 def get_params(entry):
@@ -154,15 +163,35 @@ def app(start=0, end=None):
     # arg minimize
     #prefix = "id-" + str(start)+"-to-"+str(end)+"-"
     prefix = ""
+
+    # single process
+    # for i in range(start, end):    
+    #     print('id: ', i)
+    #     crash = base(crashes[i], i)
+    #     output_list.append(crash)
+
+    # multiprocess
+    for i in range(start, end):    
+        print('id: ', i)
+        q = Queue()
+        p = Process(target=base, args=(crashes[i], i, q,))
+        p.start()
+        p_list.append(p)
+        q_list.append(q)
+
+    for i in range(start, end):    
+        crash = q_list[i].get()
+        output_list.append(crash)
+        p_list[i].join()
+
     with open(prefix + 'output.txt', 'w') as f:
         # f.write('[')
             for i in range(start, end):    
-                print('id: ', i)
-                base(i)
                 # arg_minimize(i)
                 # print(crashes[i])
                 # triage(crashes[i])
-                f.write(json.dumps(crashes[i]))
+                # f.write(json.dumps(crashes[i]))
+                f.write(json.dumps(output_list[i]))
                 f.write('\n')
                 # f.write(',\n')
             # f.write(']')

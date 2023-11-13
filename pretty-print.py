@@ -1,12 +1,13 @@
+import os
 import json
 import getopt, sys
 import shutil
+import graphviz
 from get_version import *
 from config import *
 
 file_name = ""
 out_file = ""
-
 
 def read_data():
     with open(file_name, "r") as f:
@@ -36,14 +37,6 @@ def gen_version(f):
     f.write(version)
     f.write('\n\n')
 
-# def gen_poc_context(f, item):
-#     cmd = 'cat ./pocs/poc_' + item['id']
-#     cmd = cmd.split()
-#     lines = subprocess.check_output(cmd, stderr=subprocess.STDOUT).decode('utf-8')
-#     print(lines)
-#     # f.write(lines)
-#     # f.write('\n\n')
-
 def gen_poc_context(f, item):
     cmd = 'base64 ./pocs/poc_' + item['id']
     cmd = cmd.split()
@@ -69,8 +62,8 @@ def gen_context(f, item, path=target):
 
 
 def gen_report(_id, print_normal):
-
     data = read_data()
+
     with open(out_file, "w") as f:
         for item in data:
             if item != '':
@@ -89,8 +82,63 @@ def gen_report(_id, print_normal):
         print("[OK] successfully generate '"+ out_file +"'")
 
 
+def gen_relationship():
+    data = read_data()
+    d = graphviz.Digraph('relationship')
+    nodes = []
+    colors = ['cadetblue', 'burlywood1', 'coral', 'cornsilk3', 'darkgray', 'darkseagreen3', 'gray1']
+    i = 0
+
+    for crash in data:
+        if crash == '':
+            continue
+
+        crash = json.loads(crash)['ASAN']
+        if crash == [] or crash == '':
+            continue
+
+        # print(crash)
+        funcs = []
+        for line in crash:
+            if '#' in line:
+                print(line)
+                func = line.split()[3]
+                funcs.append(func)
+                if func == 'main':
+                    break
+
+        funcs = list(reversed(funcs))
+        for idx, f in enumerate(funcs):
+            # print(f)
+            if idx == len(funcs):
+                break
+
+            if f not in nodes:
+                nodes.append(f)
+                d.node(f)
+
+            if idx !=0:
+                d.edge(funcs[idx-1], f, color=colors[i])
+
+        i = i+1
+            
+    with d.subgraph(name='child') as c:
+        c.node('tab', rank="same", shape="box", label = '''<<TABLE>
+                                                            <TR>
+                                                                <TD>left</TD>
+                                                                <TD>right</TD>
+                                                            </TR>
+                                                        </TABLE>>''')
+
+    d.format = 'svg'
+    d.render(directory='relationship-output').replace('\\', '/')
+
+    return
+
+
 def app():
     data = read_data()
+
     with open(out_file, "w") as f:
         for item in data:
             if item != '':
@@ -110,7 +158,7 @@ def app():
 
 if __name__ == '__main__':
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "n:i:t:", ["normal", "id=", "triage"])
+        opts, args = getopt.getopt(sys.argv[1:], "rn:i:t:", ["normal", "id=", "triage", "relation"])
     except getopt.GetoptError as err:
         # print help information and exit:
         print(err)  # will print something like "option -a not recognized"
@@ -131,6 +179,10 @@ if __name__ == '__main__':
             file_name = "triage-output.txt"
             out_file = "triage-print.txt"
             app()
+
+        elif o in ("-r", "--relation"):
+            file_name = "triage-output.txt"
+            gen_relationship()
 
         else:
             assert False, "unhandled option"
